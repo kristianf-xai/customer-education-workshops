@@ -1,7 +1,33 @@
 import { DEMO_AS_OF } from "@/lib/clock";
 import { daysBetween } from "@/lib/dates";
 import { formatUsd, sumCents } from "@/lib/money";
-import { PLAN_LABEL, PLAN_PRICE_CENTS, isPlanId } from "@/lib/plans";
+import { PLAN_LABEL, PLAN_PRICE_CENTS, amountsVisible, isPlanId } from "@/lib/plans";
+
+export const UPGRADE_TO_VIEW_AMOUNTS = "Upgrade to view amounts";
+
+export type AmountSurface = "display" | "payment-confirm";
+
+/**
+ * Dollar figure for a collections surface.
+ * Payment confirmation is the data-entry exception: the amount being recorded stays visible.
+ * Masking never changes the cents stored on the invoice.
+ */
+export function displayAmount(
+  cents: number,
+  plan: string,
+  surface: AmountSurface = "display",
+): string {
+  switch (surface) {
+    case "payment-confirm":
+      return formatUsd(cents);
+    case "display":
+      return amountsVisible(plan) ? formatUsd(cents) : UPGRADE_TO_VIEW_AMOUNTS;
+    default: {
+      const unreachable: never = surface;
+      return unreachable;
+    }
+  }
+}
 
 export const NO_ACTIVITY = "—";
 
