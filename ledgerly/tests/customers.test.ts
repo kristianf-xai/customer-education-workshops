@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
   },
+  useRouter: () => ({ refresh: () => {} }),
 }));
 
 const COBALT = "cus_quarrypine";
@@ -66,6 +67,30 @@ describe("Overdue Book rows", () => {
   it("uses the invoice total as the outstanding balance", () => {
     expect(book.map((row) => row.outstandingCents)).toEqual([24900, 4900, 9900]);
     expect(outstandingCents({ totalCents: 4900 })).toBe(4900);
+  });
+
+  it("subtracts recorded payments from the outstanding balance", () => {
+    expect(
+      outstandingCents({
+        totalCents: PLAN_PRICE_CENTS.SCALE,
+        payments: [{ amountCents: PLAN_PRICE_CENTS.SCALE }],
+      }),
+    ).toBe(0);
+    expect(
+      outstandingCents({
+        totalCents: PLAN_PRICE_CENTS.SCALE,
+        payments: [{ amountCents: PLAN_PRICE_CENTS.STARTER }],
+      }),
+    ).toBe(PLAN_PRICE_CENTS.SCALE - PLAN_PRICE_CENTS.STARTER);
+    const withPayment = buildOverdueBook([
+      invoice({
+        id: "inv_paid_down",
+        dueOn: new Date("2026-08-01T12:00:00.000Z"),
+        totalCents: PLAN_PRICE_CENTS.GROWTH,
+        payments: [{ amountCents: PLAN_PRICE_CENTS.STARTER }],
+      }),
+    ]);
+    expect(withPayment[0]?.outstandingCents).toBe(PLAN_PRICE_CENTS.GROWTH - PLAN_PRICE_CENTS.STARTER);
   });
 
   it("has no last activity because no activity records exist yet", () => {
