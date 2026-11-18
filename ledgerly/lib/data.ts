@@ -163,10 +163,13 @@ export async function getAccounts() {
 export async function getAccount(id: string) {
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: { invoices: { select: accountInvoiceSelect } },
+    include: {
+      invoices: { select: accountInvoiceSelect },
+      activities: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
+    },
   });
   if (!customer) return null;
-  const overdueBook = buildOverdueBook(customer.invoices);
+  const overdueBook = buildOverdueBook(customer.invoices, customer.activities);
   return {
     customer: {
       id: customer.id,
@@ -177,6 +180,17 @@ export async function getAccount(id: string) {
     },
     summary: summarizeAccount(customer, overdueBook),
     overdueBook,
+    activities: customer.activities.map((activity) => ({
+      id: activity.id,
+      invoiceId: activity.invoiceId,
+      type: activity.type,
+      status: activity.status,
+      channel: activity.channel,
+      actorName: activity.actorName,
+      body: activity.body,
+      occurredOn: activity.occurredOn,
+      createdAt: activity.createdAt,
+    })),
   };
 }
 

@@ -24,6 +24,13 @@ export type OverdueBookRow = {
   lastActivityOn: Date | null;
 };
 
+/** Enough of an activity row to date the last Nudge on an invoice. */
+export type NudgeActivityStamp = {
+  invoiceId: string | null;
+  type: string;
+  occurredOn: Date;
+};
+
 export type AccountSummary = {
   id: string;
   name: string;
@@ -41,8 +48,23 @@ export function daysPastDue(dueOn: Date): number {
   return daysBetween(DEMO_AS_OF, dueOn);
 }
 
+/** Latest Nudge on an invoice. Other activity types do not set this date. */
+export function latestNudgeOn(activities: readonly NudgeActivityStamp[], invoiceId: string): Date | null {
+  let latest: Date | null = null;
+  for (const activity of activities) {
+    if (activity.type !== "NUDGE_SENT" || activity.invoiceId !== invoiceId) continue;
+    if (!latest || activity.occurredOn.getTime() > latest.getTime()) {
+      latest = activity.occurredOn;
+    }
+  }
+  return latest;
+}
+
 /** Overdue invoices for one account, most days past due first. */
-export function buildOverdueBook(invoices: AccountInvoice[]): OverdueBookRow[] {
+export function buildOverdueBook(
+  invoices: AccountInvoice[],
+  activities: readonly NudgeActivityStamp[] = [],
+): OverdueBookRow[] {
   return invoices
     .filter((invoice) => invoice.status === "OVERDUE")
     .map((invoice) => ({
@@ -52,8 +74,7 @@ export function buildOverdueBook(invoices: AccountInvoice[]): OverdueBookRow[] {
       dueOn: invoice.dueOn,
       daysPastDue: daysPastDue(invoice.dueOn),
       outstandingCents: outstandingCents(invoice),
-      // No activity records exist yet; later slices fill this from the account history.
-      lastActivityOn: null,
+      lastActivityOn: latestNudgeOn(activities, invoice.id),
     }))
     .sort((a, b) => b.daysPastDue - a.daysPastDue || a.number.localeCompare(b.number));
 }

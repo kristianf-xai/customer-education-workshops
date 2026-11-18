@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -36,6 +37,7 @@ export function OverdueBook({ rows }: { rows: OverdueBookRow[] }) {
                 <TableHead className="text-right">Days past due</TableHead>
                 <TableHead className="text-right">Outstanding balance</TableHead>
                 <TableHead className="px-5">Last activity</TableHead>
+                <TableHead className="px-5">Nudge</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -57,6 +59,17 @@ export function OverdueBook({ rows }: { rows: OverdueBookRow[] }) {
                   </TableCell>
                   <TableCell className="px-5 text-muted-foreground">
                     {row.lastActivityOn ? formatDate(row.lastActivityOn) : NO_ACTIVITY}
+                  </TableCell>
+                  <TableCell className="relative z-10 px-5">
+                    <form
+                      data-nudge="invoice"
+                      method="post"
+                      action={`/api/invoices/${row.invoiceId}/nudge`}
+                    >
+                      <Button type="submit" size="sm" aria-label={`Send Nudge for ${row.number}`}>
+                        Send Nudge
+                      </Button>
+                    </form>
                   </TableCell>
                 </TableRow>
               ))}
