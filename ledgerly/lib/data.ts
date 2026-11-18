@@ -10,6 +10,7 @@ import {
   revenueSeries,
 } from "@/lib/dashboard";
 import type { DisputeStatus, InvoiceStatus } from "@/lib/status";
+import { buildOverdueBook, compareAccounts, summarizeAccount } from "@/lib/accounts";
 
 const invoiceInclude = {
   customer: true,
@@ -139,6 +140,44 @@ export async function getOpenDisputeNotices() {
     invoiceNumber: dispute.invoice.number,
     status: dispute.status,
   }));
+}
+
+const accountInvoiceSelect = {
+  id: true,
+  number: true,
+  status: true,
+  issuedOn: true,
+  dueOn: true,
+  totalCents: true,
+} as const;
+
+export async function getAccounts() {
+  const customers = await prisma.customer.findMany({
+    include: { invoices: { select: accountInvoiceSelect } },
+  });
+  return customers
+    .map((customer) => summarizeAccount(customer, buildOverdueBook(customer.invoices)))
+    .sort(compareAccounts);
+}
+
+export async function getAccount(id: string) {
+  const customer = await prisma.customer.findUnique({
+    where: { id },
+    include: { invoices: { select: accountInvoiceSelect } },
+  });
+  if (!customer) return null;
+  const overdueBook = buildOverdueBook(customer.invoices);
+  return {
+    customer: {
+      id: customer.id,
+      name: customer.name,
+      contactName: customer.contactName,
+      email: customer.email,
+      plan: customer.plan,
+    },
+    summary: summarizeAccount(customer, overdueBook),
+    overdueBook,
+  };
 }
 
 export async function getWorkspace() {
