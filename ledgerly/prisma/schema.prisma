@@ -18,15 +18,17 @@ model Workspace {
 }
 
 model Customer {
-  id          String    @id
+  id          String           @id
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
   name        String
   contactName String
   email       String
   plan        String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime         @default(now())
   invoices    Invoice[]
+  notes       CollectionNote[]
+  activities  Activity[]
 }
 
 model Invoice {
@@ -48,6 +50,8 @@ model Invoice {
   collectionNote  String?
   lines           InvoiceLine[]
   disputes        Dispute[]
+  notes           CollectionNote[]
+  activities      Activity[]
 }
 
 model InvoiceLine {
@@ -72,4 +76,33 @@ model Dispute {
   disputedAmountCents  Int
   suggestedCreditCents Int
   reviewerNote         String?
+}
+
+model CollectionNote {
+  id         String   @id
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceId  String?
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  authorName String
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId, createdAt])
+}
+
+model Activity {
+  id         String   @id
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoiceId  String?
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  type       String
+  actorName  String
+  payload    String
+  occurredOn DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([customerId, createdAt])
 }
