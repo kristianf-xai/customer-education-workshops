@@ -38,22 +38,22 @@ export const FIELD_DEMO_ISSUES: readonly FieldDemoIssue[] = [
     previousTitles: ["Dispute dsp_1043 claims $400 against a $249 Scale invoice"],
     description: `## Bug
 
-Open http://127.0.0.1:43173/disputes/dsp_1043. The Resolution card shows **Suggested credit $400.00**. INV-1043 is Scale at **$249**. Expected suggested credit is **$249.00**.
+Open http://127.0.0.1:43173/disputes/dsp_1043. The Resolution card shows **Suggested credit $249.00**. INV-1043 is Scale at **$249**. The caption reads "Within the Scale catalog price of $249.00. Source: suggested-credit API v2."
 
-The $400 figure is Cobalt Goods' claim, not a fourth catalog price. Do not change the stored claim. The page still calls deprecated suggested-credit v1, which returns the raw claim. v2, the domain helper, and the seed already cap at $249.
+The $400 figure is Cobalt Goods' claim, not a fourth catalog price. The stored claim stays $400. The client calls suggested-credit v2, which caps the suggestion at the catalog price. The v1 route still returns the raw claim. The domain helper and the seed already cap at $249.
 
 ## Acceptance
 
 - Client selects /api/v2/disputes/*/suggested-credit.
 - dsp_1043 still stores a $400 claim against INV-1043 (Scale $249).
-- v1 and v2 routes remain; tests/suggested-credit-api.test.ts is not edited to force green.
+- v1 and v2 routes remain; tests/suggested-credit-api.test.ts is not edited.
 
 ## Paths
 
-- \`lib/disputes/suggested-credit-api.ts\`
+- \`lib/disputes/suggested-credit-api.ts\` — \`SUGGESTED_CREDIT_API_VERSION\` is \`v2\`
 - \`app/disputes/[id]/page.tsx\`
-- \`app/api/v1/disputes/[id]/suggested-credit/route.ts\`
-- \`app/api/v2/disputes/[id]/suggested-credit/route.ts\`
+- \`app/api/v1/disputes/[id]/suggested-credit/route.ts\` — still returns the raw claim
+- \`app/api/v2/disputes/[id]/suggested-credit/route.ts\` — caps at the catalog price
 
 ## Verify
 
@@ -97,7 +97,7 @@ Leave catalog prices, suggested credit, dispute resolution, and pill styling alo
 
 ## Proof
 
-A proving test that the Overdue pill on /invoices lists only OVERDUE invoices. It fails on the current query key (\`state\`) and passes after the pills and pages use the same key (\`status\`). \`npm test\` still has one planted failure: \`tests/suggested-credit-api.test.ts\`.
+A proving test that the Overdue pill on /invoices lists only OVERDUE invoices. It fails on the current query key (\`state\`) and passes after the pills and pages use the same key (\`status\`). \`npm test\` stays **0 failed / 36 passed**. Do not change suggested credit in this change.
 
 http://127.0.0.1:43173/invoices — select Overdue; the table and URL match (\`status=OVERDUE\`).
 http://127.0.0.1:43173/disputes — select Needs review; the queue and URL match.
@@ -505,7 +505,7 @@ Paid, Open, Overdue, and Disputed badges, muted text, and the up KPI still read 
 
 ## Proof
 
-\`npm run test:a11y\` goes from 7 failed / 83 passed to 0 failed / 90 passed. \`npm test\` stays 1 failed / 35 passed.
+\`npm run test:a11y\` goes from 7 failed / 83 passed to 0 failed / 90 passed. \`npm test\` stays 0 failed / 36 passed.
 
 http://127.0.0.1:43173/invoices — Paid, Open, and Overdue badge text in light and dark.
 

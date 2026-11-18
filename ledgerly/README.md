@@ -81,10 +81,10 @@ npm test
 Expected result:
 
 ```text
-1 failed / 35 passed
+0 failed / 36 passed
 ```
 
-The failing test is part of the workshop. It doesn't mean setup failed.
+A passing suite means setup succeeded. Suggested credit on dsp_1043 uses API v2 and shows $249.00.
 
 ### Troubleshoot
 
