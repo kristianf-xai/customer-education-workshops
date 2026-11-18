@@ -8,11 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { NO_ACTIVITY, type OverdueBookRow } from "@/lib/accounts";
+import { NO_ACTIVITY, displayAmount, type OverdueBookRow } from "@/lib/accounts";
 import { formatDate } from "@/lib/dates";
-import { formatUsd } from "@/lib/money";
 
-export function OverdueBook({ rows }: { rows: OverdueBookRow[] }) {
+export function OverdueBook({ rows, plan }: { rows: OverdueBookRow[]; plan: string }) {
   return (
     <Card className="overflow-hidden py-0">
       <CardHeader className="px-5 pt-5">
@@ -53,7 +52,7 @@ export function OverdueBook({ rows }: { rows: OverdueBookRow[] }) {
                   <TableCell className="text-muted-foreground">{formatDate(row.dueOn)}</TableCell>
                   <TableCell className="text-right">{row.daysPastDue}</TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatUsd(row.outstandingCents)}
+                    {displayAmount(row.outstandingCents, plan)}
                   </TableCell>
                   <TableCell className="px-5 text-muted-foreground">
                     {row.lastActivityOn ? formatDate(row.lastActivityOn) : NO_ACTIVITY}

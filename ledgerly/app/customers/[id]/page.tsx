@@ -4,9 +4,8 @@ import { PageHeader } from "@/components/page-header";
 import { OverdueBook } from "@/components/customers/overdue-book";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { describePlan } from "@/lib/accounts";
+import { describePlan, displayAmount } from "@/lib/accounts";
 import { getAccount } from "@/lib/data";
-import { formatUsd } from "@/lib/money";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,11 +43,13 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold tracking-tight">{formatUsd(summary.overdueCents)}</p>
+          <p className="text-3xl font-semibold tracking-tight">
+            {displayAmount(summary.overdueCents, customer.plan)}
+          </p>
         </CardContent>
       </Card>
 
-      <OverdueBook rows={overdueBook} />
+      <OverdueBook rows={overdueBook} plan={customer.plan} />
     </div>
   );
 }

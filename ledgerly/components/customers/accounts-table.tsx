@@ -7,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { describePlan, type AccountSummary } from "@/lib/accounts";
-import { formatUsd } from "@/lib/money";
+import { describePlan, displayAmount, type AccountSummary } from "@/lib/accounts";
 
 export function AccountsTable({ accounts }: { accounts: AccountSummary[] }) {
   return (
@@ -31,7 +30,9 @@ export function AccountsTable({ accounts }: { accounts: AccountSummary[] }) {
             </TableCell>
             <TableCell className="text-muted-foreground">{describePlan(account.plan)}</TableCell>
             <TableCell className="text-right">{account.overdueCount}</TableCell>
-            <TableCell className="text-right font-medium">{formatUsd(account.overdueCents)}</TableCell>
+            <TableCell className="text-right font-medium">
+              {displayAmount(account.overdueCents, account.plan)}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

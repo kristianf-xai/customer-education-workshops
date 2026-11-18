@@ -5,6 +5,7 @@ import AccountDetailPage from "@/app/customers/[id]/page";
 import CustomersPage from "@/app/customers/page";
 import InvoiceDetailPage from "@/app/invoices/[id]/page";
 import { NAV } from "@/components/app-chrome";
+import { AccountsTable } from "@/components/customers/accounts-table";
 import { OverdueBook } from "@/components/customers/overdue-book";
 import {
   NO_ACTIVITY,
@@ -25,6 +26,7 @@ vi.mock("next/navigation", () => ({
 
 const COBALT = "cus_quarrypine";
 const SILVERPINE = "cus_silverpine";
+const OAKIRON = "cus_oakiron";
 const NO_OVERDUE = "cus_harborline";
 
 function invoice(partial: Partial<AccountInvoice> & Pick<AccountInvoice, "id" | "dueOn">): AccountInvoice {
@@ -44,6 +46,14 @@ async function renderAccount(id: string) {
 
 function invoiceHrefs(markup: string) {
   return [...markup.matchAll(/href="\/invoices\/([^"]+)"/g)].map((match) => match[1]);
+}
+
+function balanceCell(markup: string, accountId: string) {
+  const row = markup.match(new RegExp(`data-account-id="${accountId}"[\\s\\S]*?</tr>`))?.[0] ?? "";
+  const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((match) =>
+    match[1].replace(/<[^>]+>/g, "").trim(),
+  );
+  return cells.at(-1) ?? "";
 }
 
 describe("Overdue Book rows", () => {
@@ -110,6 +120,33 @@ describe("Customers navigation and list", () => {
     expect(describePlan("SCALE")).toBe(`Scale · ${formatUsd(24900)}`);
     expect(markup).toContain(formatUsd(24900));
   });
+
+  it("formats dollar figures with formatUsd for seeded Starter, Growth, and Scale", async () => {
+    const accounts = await getAccounts();
+    const list = renderToStaticMarkup(createElement(AccountsTable, { accounts }));
+    expect(balanceCell(list, OAKIRON)).toBe(formatUsd(0));
+    expect(balanceCell(list, SILVERPINE)).toBe(formatUsd(PLAN_PRICE_CENTS.GROWTH));
+    expect(balanceCell(list, COBALT)).toBe(formatUsd(PLAN_PRICE_CENTS.SCALE));
+    expect(list).toContain(describePlan("STARTER"));
+    expect(list).toContain(describePlan("GROWTH"));
+    expect(list).toContain(describePlan("SCALE"));
+    expect(list).not.toContain("Upgrade to view amounts");
+
+    const starter = await renderAccount(OAKIRON);
+    expect(starter).toContain(formatUsd(0));
+    expect(starter).toContain(describePlan("STARTER"));
+    expect(starter).not.toContain("Upgrade to view amounts");
+
+    const growth = await renderAccount(SILVERPINE);
+    expect(growth).toContain(formatUsd(PLAN_PRICE_CENTS.GROWTH));
+    expect(growth).toContain("INV-1047");
+    expect(growth).not.toContain("Upgrade to view amounts");
+
+    const scale = await renderAccount(COBALT);
+    expect(scale).toContain(formatUsd(PLAN_PRICE_CENTS.SCALE));
+    expect(scale).toContain("INV-1043");
+    expect(scale).not.toContain("Upgrade to view amounts");
+  });
 });
 
 describe("Account Detail overdue book", () => {
@@ -135,6 +172,7 @@ describe("Account Detail overdue book", () => {
   it("orders multiple rows by days past due descending", () => {
     const markup = renderToStaticMarkup(
       createElement(OverdueBook, {
+        plan: "GROWTH",
         rows: buildOverdueBook([
           invoice({ id: "inv_new", dueOn: new Date("2026-08-20T12:00:00.000Z") }),
           invoice({ id: "inv_old", dueOn: new Date("2026-07-01T12:00:00.000Z") }),
