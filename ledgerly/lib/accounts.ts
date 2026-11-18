@@ -4,6 +4,7 @@ import { formatUsd, sumCents } from "@/lib/money";
 import { PLAN_LABEL, PLAN_PRICE_CENTS, isPlanId } from "@/lib/plans";
 
 export const NO_ACTIVITY = "—";
+export const NOTE_ADDED = "NOTE_ADDED";
 
 export type AccountInvoice = {
   id: string;
@@ -24,6 +25,23 @@ export type OverdueBookRow = {
   lastActivityOn: Date | null;
 };
 
+export type AccountActivity = {
+  invoiceId: string | null;
+  type: string;
+  occurredOn: Date;
+  createdAt: Date;
+};
+
+/** Newest note activity on this invoice. The date is the activity's occurredOn. */
+function latestNoteActivityOn(invoiceId: string, activities: AccountActivity[]): Date | null {
+  let match: AccountActivity | null = null;
+  for (const activity of activities) {
+    if (activity.type !== NOTE_ADDED || activity.invoiceId !== invoiceId) continue;
+    if (!match || activity.createdAt.getTime() > match.createdAt.getTime()) match = activity;
+  }
+  return match?.occurredOn ?? null;
+}
+
 export type AccountSummary = {
   id: string;
   name: string;
@@ -42,7 +60,10 @@ export function daysPastDue(dueOn: Date): number {
 }
 
 /** Overdue invoices for one account, most days past due first. */
-export function buildOverdueBook(invoices: AccountInvoice[]): OverdueBookRow[] {
+export function buildOverdueBook(
+  invoices: AccountInvoice[],
+  activities: AccountActivity[] = [],
+): OverdueBookRow[] {
   return invoices
     .filter((invoice) => invoice.status === "OVERDUE")
     .map((invoice) => ({
@@ -52,8 +73,7 @@ export function buildOverdueBook(invoices: AccountInvoice[]): OverdueBookRow[] {
       dueOn: invoice.dueOn,
       daysPastDue: daysPastDue(invoice.dueOn),
       outstandingCents: outstandingCents(invoice),
-      // No activity records exist yet; later slices fill this from the account history.
-      lastActivityOn: null,
+      lastActivityOn: latestNoteActivityOn(invoice.id, activities),
     }))
     .sort((a, b) => b.daysPastDue - a.daysPastDue || a.number.localeCompare(b.number));
 }

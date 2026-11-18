@@ -10,7 +10,8 @@ import {
   revenueSeries,
 } from "@/lib/dashboard";
 import type { DisputeStatus, InvoiceStatus } from "@/lib/status";
-import { buildOverdueBook, compareAccounts, summarizeAccount } from "@/lib/accounts";
+import { NOTE_ADDED, buildOverdueBook, compareAccounts, summarizeAccount } from "@/lib/accounts";
+import { noteIsEditable, readNoteActivityPayload } from "@/lib/notes";
 
 const invoiceInclude = {
   customer: true,
@@ -151,22 +152,40 @@ const accountInvoiceSelect = {
   totalCents: true,
 } as const;
 
+const accountActivitySelect = {
+  invoiceId: true,
+  type: true,
+  payload: true,
+  occurredOn: true,
+  createdAt: true,
+} as const;
+
 export async function getAccounts() {
   const customers = await prisma.customer.findMany({
-    include: { invoices: { select: accountInvoiceSelect } },
+    include: {
+      invoices: { select: accountInvoiceSelect },
+      activities: { select: accountActivitySelect },
+    },
   });
   return customers
-    .map((customer) => summarizeAccount(customer, buildOverdueBook(customer.invoices)))
+    .map((customer) =>
+      summarizeAccount(customer, buildOverdueBook(customer.invoices, customer.activities)),
+    )
     .sort(compareAccounts);
 }
 
 export async function getAccount(id: string) {
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: { invoices: { select: accountInvoiceSelect } },
+    include: {
+      invoices: { select: accountInvoiceSelect },
+      notes: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] },
+      activities: { select: accountActivitySelect },
+    },
   });
   if (!customer) return null;
-  const overdueBook = buildOverdueBook(customer.invoices);
+  const invoiceNumbers = new Map(customer.invoices.map((invoice) => [invoice.id, invoice.number]));
+  const overdueBook = buildOverdueBook(customer.invoices, customer.activities);
   return {
     customer: {
       id: customer.id,
@@ -177,7 +196,33 @@ export async function getAccount(id: string) {
     },
     summary: summarizeAccount(customer, overdueBook),
     overdueBook,
+    invoices: customer.invoices
+      .map((invoice) => ({ id: invoice.id, number: invoice.number }))
+      .sort((a, b) => a.number.localeCompare(b.number)),
+    notes: customer.notes.map((note) => ({
+      id: note.id,
+      body: note.body,
+      authorName: note.authorName,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      invoiceId: note.invoiceId,
+      invoiceNumber: note.invoiceId ? (invoiceNumbers.get(note.invoiceId) ?? null) : null,
+      originalBody: originalNoteBody(note.id, customer.activities) ?? note.body,
+      editable: noteIsEditable(note),
+    })),
   };
+}
+
+function originalNoteBody(
+  noteId: string,
+  activities: { type: string; payload: string }[],
+): string | null {
+  for (const activity of activities) {
+    if (activity.type !== NOTE_ADDED) continue;
+    const payload = readNoteActivityPayload(activity.payload);
+    if (payload?.noteId === noteId) return payload.body;
+  }
+  return null;
 }
 
 export async function getWorkspace() {
