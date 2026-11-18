@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AccountActivity } from "@/components/customers/account-activity";
 import { PageHeader } from "@/components/page-header";
 import { OverdueBook } from "@/components/customers/overdue-book";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   const account = await getAccount(id);
   if (!account) notFound();
 
-  const { customer, summary, overdueBook } = account;
+  const { customer, summary, overdueBook, activities } = account;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -49,6 +50,8 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
       </Card>
 
       <OverdueBook rows={overdueBook} />
+
+      <AccountActivity activities={activities} />
     </div>
   );
 }

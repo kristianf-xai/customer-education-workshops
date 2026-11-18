@@ -12,6 +12,7 @@ export type AccountInvoice = {
   issuedOn: Date;
   dueOn: Date;
   totalCents: number;
+  payments?: readonly { amountCents: number }[];
 };
 
 export type OverdueBookRow = {
@@ -32,9 +33,14 @@ export type AccountSummary = {
   overdueCents: number;
 };
 
-/** Single seam for what an invoice still owes. Payments will subtract from this. */
-export function outstandingCents(invoice: Pick<AccountInvoice, "totalCents">): number {
-  return invoice.totalCents;
+/** What an invoice still owes: its total minus recorded payments. */
+export function outstandingCents(
+  invoice: Pick<AccountInvoice, "totalCents"> & {
+    payments?: readonly { amountCents: number }[];
+  },
+): number {
+  const paid = sumCents((invoice.payments ?? []).map((payment) => payment.amountCents));
+  return Math.max(0, invoice.totalCents - paid);
 }
 
 export function daysPastDue(dueOn: Date): number {

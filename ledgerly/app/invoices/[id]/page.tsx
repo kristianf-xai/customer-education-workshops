@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RecordPayment } from "@/components/invoices/record-payment";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceStatusBadge, DisputeStatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { outstandingCents } from "@/lib/accounts";
 import { draftCollectionNote } from "@/lib/collection-note";
 import { DEMO_AS_OF } from "@/lib/clock";
 import { getInvoice } from "@/lib/data";
@@ -19,12 +21,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: invoice ? invoice.number : "Invoice" };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const invoice = await getInvoice(id);
   if (!invoice) notFound();
   if (!isPlanId(invoice.plan)) notFound();
 
+  const balance = outstandingCents(invoice);
   const daysPastDue =
     invoice.status === "OVERDUE" ? Math.max(0, daysBetween(DEMO_AS_OF, invoice.dueOn)) : 0;
   const noteDraft = draftCollectionNote({
@@ -118,6 +123,43 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           ) : null}
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment history</CardTitle>
+          <CardDescription>Payments recorded against this invoice.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {invoice.payments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No payments recorded.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {invoice.payments.map((payment) => (
+                <li key={payment.id} data-method={payment.method}>
+                  {formatDate(payment.recordedAt)} · {payment.method} · {formatUsd(payment.amountCents)} ·{" "}
+                  {payment.recordedBy}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {balance > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Record payment</CardTitle>
+            <CardDescription>Records the full outstanding balance after you confirm.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecordPayment
+              invoiceId={invoice.id}
+              invoiceNumber={invoice.number}
+              outstandingCents={balance}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
