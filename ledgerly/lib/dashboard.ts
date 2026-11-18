@@ -1,3 +1,4 @@
+import { buildOverdueBook, outstandingCents, type AccountInvoice } from "@/lib/accounts";
 import { DEMO_AS_OF, DEMO_PRIOR_END, DEMO_PRIOR_START, DEMO_WINDOW_START } from "@/lib/clock";
 import { sumCents } from "@/lib/money";
 import { planPriceCents } from "@/lib/plans";
@@ -101,3 +102,76 @@ export const DASHBOARD_WINDOWS = {
   priorStart: DEMO_PRIOR_START,
   priorEnd: DEMO_PRIOR_END,
 };
+
+/** Activity counted on the collections card, ending on the demo clock. */
+const COLLECTIONS_ACTIVITY_DAYS = 7;
+
+export type CollectionActivity = {
+  occurredOn: Date;
+};
+
+export type CollectionsTotals = {
+  overdueCents: number;
+  overdueCount: number;
+  workedToday: number;
+  workedLast7Days: number;
+};
+
+function utcDayIndex(date: Date): number {
+  return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000);
+}
+
+function countActivitiesOnDays(
+  activities: CollectionActivity[],
+  startDay: number,
+  endDay: number,
+): number {
+  return activities.filter((activity) => {
+    const day = utcDayIndex(activity.occurredOn);
+    return day >= startDay && day <= endDay;
+  }).length;
+}
+
+/**
+ * Activity dates that exist on the book. `lastActivityOn` stays empty until a
+ * note, nudge, or payment is recorded; each recorded date counts as one activity.
+ */
+export function activitiesFromLastActivity(
+  rows: { lastActivityOn: Date | null }[],
+): CollectionActivity[] {
+  return rows.flatMap((row) => (row.lastActivityOn ? [{ occurredOn: row.lastActivityOn }] : []));
+}
+
+/** Overdue exposure and how much of the book was worked, as of the demo clock. */
+export function collectionsTotals(
+  invoices: { status: string; totalCents: number }[],
+  activities: CollectionActivity[],
+  asOf: Date = DEMO_AS_OF,
+): CollectionsTotals {
+  const overdue = invoices.filter((invoice) => invoice.status === "OVERDUE");
+  const endDay = utcDayIndex(asOf);
+  return {
+    overdueCents: sumCents(overdue.map((invoice) => outstandingCents(invoice))),
+    overdueCount: overdue.length,
+    workedToday: countActivitiesOnDays(activities, endDay, endDay),
+    workedLast7Days: countActivitiesOnDays(
+      activities,
+      endDay - (COLLECTIONS_ACTIVITY_DAYS - 1),
+      endDay,
+    ),
+  };
+}
+
+/** Totals for the current book. Activity is whatever `lastActivityOn` already holds. */
+export function collectionsForInvoices(
+  invoices: AccountInvoice[],
+  asOf: Date = DEMO_AS_OF,
+): CollectionsTotals {
+  return collectionsTotals(invoices, activitiesFromLastActivity(buildOverdueBook(invoices)), asOf);
+}
+
+export function collectionsCardHint(totals: CollectionsTotals): string {
+  const invoices =
+    totals.overdueCount === 1 ? "1 overdue invoice" : `${totals.overdueCount} overdue invoices`;
+  return `${invoices} · ${totals.workedToday} worked today · ${totals.workedLast7Days} in the last 7 days`;
+}

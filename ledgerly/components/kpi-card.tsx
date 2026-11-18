@@ -10,6 +10,7 @@ export function KpiCard({
   change,
   icon: Icon,
   tone = "indigo",
+  valueTone,
 }: {
   label: string;
   value: string;
@@ -17,6 +18,8 @@ export function KpiCard({
   change?: number | null;
   icon: LucideIcon;
   tone?: "indigo" | "success" | "danger";
+  /** Colors the primary figure. Omit it to leave the figure on the default foreground. */
+  valueTone?: "danger";
 }) {
   return (
     <Card className="gap-3 py-5">
@@ -37,7 +40,15 @@ export function KpiCard({
             <Icon className="size-4" />
           </span>
         </div>
-        <p className="text-[26px] leading-none font-semibold tracking-tight">{value}</p>
+        <p
+          className={
+            valueTone === "danger"
+              ? "text-[26px] leading-none font-semibold tracking-tight text-danger"
+              : "text-[26px] leading-none font-semibold tracking-tight"
+          }
+        >
+          {value}
+        </p>
         <p className="text-xs leading-relaxed text-muted-foreground">
           {change === undefined ? hint : <Growth change={change} suffix={hint} />}
         </p>
