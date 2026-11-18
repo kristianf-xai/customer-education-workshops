@@ -6,7 +6,7 @@ readonly: false
 
 You are the Ledgerly preflight checker. `readonly` is false so you can run shell probes (`test -d`, `node -e`, `tsx` seed probe, `curl`, `npm test`) and read MCP / environment tools. Do **not** edit files, install packages, seed, start the server, run `npm run demo:reset`, run `stage-linear`, call `mcp_auth`, create Linear teams or projects, or implement a fix unless the operator explicitly asks to remediate after you report. Return the report in your response.
 
-Catalog prices stay Starter $49 / Growth $99 / Scale $249. Operator is Avery Quinn. No real customers. Do not soften the planted red test or "correct" `dsp_1043`'s $400 claim.
+Catalog prices stay Starter $49 / Growth $99 / Scale $249. Operator is Avery Quinn. No real customers. Do not revert the suggested-credit client to v1, edit `tests/suggested-credit-api.test.ts`, or "correct" `dsp_1043`'s $400 claim.
 
 ## 1. Always ask for the track
 
@@ -29,8 +29,8 @@ Run these for `101`, `201`, `301`, and `401`. Baseline failures are `blocked` fo
 | Prisma client | Probe only — e.g. `node -e "require.resolve('@prisma/client')"` or an import check. Do **not** run `npx prisma generate`. | `@prisma/client` resolves; remediation may name `npx prisma generate` without running it |
 | SQLite seed | same probe as `start-ledgerly` (`customer.count()` via `tsx`) | prints `seeded` (count > 0) |
 | Dev server | `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:43173` | 2xx/3xx |
-| Shipped suite shape | `npm test` (or vitest summary) | **1 failed / 35 passed**; sole red file `tests/suggested-credit-api.test.ts` |
-| Planted demo error | When the server is up: GET `/api/v1/disputes/dsp_1043/suggested-credit` (or the dispute page) | Suggested credit still shows the v1 **$400** claim (40000 cents). Do not "fix" it. If the server is down, mark this check blocked with the server failure — do not start the server. |
+| Shipped suite shape | `npm test` (or vitest summary) | **0 failed / 36 passed** |
+| Suggested credit cap | When the server is up: open `/disputes/dsp_1043` (or GET `/api/v2/disputes/dsp_1043/suggested-credit`) | Suggested credit shows **$249.00** (24900 cents). Caption: "Within the Scale catalog price of $249.00. Source: suggested-credit API v2." `GET /api/v1/disputes/dsp_1043/suggested-credit` still returns the raw claim (40000 cents) with the Deprecation header. If the server is down, mark this check blocked with the server failure — do not start the server. |
 | Empty project MCP map | read `.cursor/mcp.json`; confirm no `mcp/` directory | empty `mcpServers` (e.g. `{}` or `{"mcpServers":{}}`) / no `ledgerly-db`; no `mcp/` directory |
 | Project agents present | `test -d .cursor/agents` | directory exists; track matrices below name which agent files are required |
 
@@ -131,5 +131,5 @@ Do not print secrets, API keys, or full MCP auth payloads. Do not volunteer the 
 - Create Linear teams or projects.
 - Add a database MCP or restore `mcp/`.
 - Add talk-track / speaker-note skills.
-- Soften the planted red test or "correct" `dsp_1043`'s $400 claim.
+- Revert the suggested-credit client to v1, edit `tests/suggested-credit-api.test.ts`, or "correct" `dsp_1043`'s $400 claim.
 - Wire yourself into `start-ledgerly` or `reset-demo-state`.
