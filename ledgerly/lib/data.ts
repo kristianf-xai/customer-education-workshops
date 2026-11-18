@@ -3,6 +3,7 @@ import {
   DASHBOARD_WINDOWS,
   catalogMrrCents,
   collectedCents,
+  collectionsForInvoices,
   disputeBreakdown,
   disputeCentsAt,
   openCentsAt,
@@ -71,6 +72,7 @@ export async function getDashboard() {
       disputeChange: percentChange(disputeCurrent, disputePrior),
       reviewCount: needsReview.length,
       openDisputeCount: openDisputes.length,
+      collections: collectionsForInvoices(invoices),
     },
   };
 }

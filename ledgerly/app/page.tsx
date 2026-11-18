@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, CalendarRange, CircleDollarSign, FileText, TrendingUp } from "lucide-react";
+import { AlertTriangle, CalendarRange, CircleDollarSign, ClipboardList, FileText, TrendingUp } from "lucide-react";
 import { DisputeDonut } from "@/components/charts/dispute-donut";
 import { RevenueChart } from "@/components/charts/revenue-chart";
 import { InvoiceTable } from "@/components/invoice-table";
 import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { collectionsCardHint } from "@/lib/dashboard";
 import { getDashboard } from "@/lib/data";
 import { formatUsd } from "@/lib/money";
 
@@ -33,6 +34,17 @@ export default async function DashboardPage() {
           Jul 24 – Aug 23, 2026
         </p>
       </div>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Collections"
+          value={formatUsd(kpis.collections.overdueCents)}
+          hint={collectionsCardHint(kpis.collections)}
+          icon={ClipboardList}
+          tone="indigo"
+          valueTone="danger"
+        />
+      </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
